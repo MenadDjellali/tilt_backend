@@ -1,0 +1,343 @@
+// Prisma Schema for tilt_schema
+// --------------------------------------------------
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  output          = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["tilt_schema"]
+}
+
+enum TypeUtilisateur {
+  admin
+  client
+  commercant
+
+  @@schema("tilt_schema")
+}
+
+enum TypeRecompense {
+  montant_fixe
+  pourcentage
+  objet
+
+  @@schema("tilt_schema")
+}
+
+enum StatutAbonnement {
+  essai
+  actif
+  expiré
+  annulé
+
+  @@schema("tilt_schema")
+}
+
+enum TypeAbonnement {
+  mensuel
+  annuel
+
+  @@schema("tilt_schema")
+}
+
+enum TypeAbonnementDetail {
+  basique
+  premium
+
+  @@schema("tilt_schema")
+}
+
+enum StatutPaiement {
+  succeeded
+  pending
+  failed
+
+  @@schema("tilt_schema")
+}
+
+model Utilisateur {
+  id               String          @id @default(uuid())
+  email            String          @unique
+  mot_de_passe     String
+  nom              String?
+  prenom           String?
+  numero_telephone String?
+  adresse          String?
+  code_postal      String?
+  ville            String?
+  latitude         Float?
+  longitude        Float?
+  code_secret      String?
+  type_utilisateur TypeUtilisateur
+  date_creation    DateTime        @default(now())
+
+  magasins         Magasin[]
+  achats           Achat[]
+  pointsClient     PointClient[]
+  abonnements      Abonnement[]
+  badges           UtilisateursBadges[]
+  parrainages      Parrainage[]         @relation("Parrain")
+  filleuls         Parrainage[]         @relation("Filleul")
+  qrCodes          QrCode[]
+  notifications    Notification[]
+  avis             Avis[]
+  recompensesUsees RecompenseUtilisee[]
+
+  @@map("utilisateur")
+  @@schema("tilt_schema")
+}
+
+model Categorie {
+  id            String    @id @default(uuid())
+  nom_categorie String
+  magasins      Magasin[]
+
+  @@map("categorie")
+  @@schema("tilt_schema")
+}
+
+model Magasin {
+  id                 String   @id @default(uuid())
+  nom                String?
+  numeros_de_siret   String?  @unique
+  numero_telephone   String?
+  email              String?  @unique
+  site_web           String?
+  description        String?
+  adresse            String?
+  code_postal        String?
+  ville              String?
+  latitude           Float?
+  longitude          Float?
+  photo_url          String?
+  horaires_ouverture String?
+  date_creation      DateTime @default(now())
+
+  id_categorie String?
+  categorie    Categorie? @relation(fields: [id_categorie], references: [id])
+
+  id_utilisateur String?
+  utilisateur    Utilisateur? @relation(fields: [id_utilisateur], references: [id])
+
+  programmeFidelite ProgrammeFidelite[]
+  achats            Achat[]
+  recompenses       Recompense[]
+  pointsClient      PointClient[]
+  recompensesUsees  RecompenseUtilisee[]
+  avis              Avis[]
+
+  @@map("magasin")
+  @@schema("tilt_schema")
+}
+
+model ProgrammeFidelite {
+  id                     String         @id @default(uuid())
+  points_par_euro        Float          @default(10.0)
+  palier_points          Int?
+  type_recompense        TypeRecompense
+  valeur_recompense      String?
+  description_recompense String?
+  date_creation          DateTime       @default(now())
+  date_modification      DateTime       @default(now())
+
+  id_magasin String
+  magasin    Magasin @relation(fields: [id_magasin], references: [id])
+
+  @@map("programme_fidelite")
+  @@schema("tilt_schema")
+}
+
+model Achat {
+  id            String   @id @default(uuid())
+  montant       Float?
+  points_gagnes Float?
+  date_achat    DateTime @default(now())
+
+  id_utilisateur String
+  utilisateur    Utilisateur @relation(fields: [id_utilisateur], references: [id])
+
+  id_magasin String
+  magasin    Magasin @relation(fields: [id_magasin], references: [id])
+
+  @@map("achat")
+  @@schema("tilt_schema")
+}
+
+model Recompense {
+  id                     String         @id @default(uuid())
+  points_requis          Float
+  type_recompense        TypeRecompense
+  valeur_recompense      String?
+  description_recompense String?
+  date_creation          DateTime       @default(now())
+
+  id_magasin String
+  magasin    Magasin @relation(fields: [id_magasin], references: [id])
+
+  recompensesUsees RecompenseUtilisee[]
+
+  @@map("recompense")
+  @@schema("tilt_schema")
+}
+
+model PointClient {
+  id               String   @id @default(uuid())
+  solde_points     Float?
+  points_utilises  Float?
+  date_mise_a_jour DateTime @default(now())
+
+  id_utilisateur String
+  utilisateur    Utilisateur @relation(fields: [id_utilisateur], references: [id])
+
+  id_magasin String
+  magasin    Magasin @relation(fields: [id_magasin], references: [id])
+
+  @@unique([id_utilisateur, id_magasin])
+  @@map("point_client")
+  @@schema("tilt_schema")
+}
+
+model RecompenseUtilisee {
+  id               String   @id @default(uuid())
+  date_utilisation DateTime @default(now())
+
+  id_utilisateur String
+  utilisateur    Utilisateur @relation(fields: [id_utilisateur], references: [id])
+
+  id_recompense String
+  recompense    Recompense @relation(fields: [id_recompense], references: [id])
+
+  id_magasin String
+  magasin    Magasin @relation(fields: [id_magasin], references: [id])
+
+  @@map("recompense_utilisee")
+  @@schema("tilt_schema")
+}
+
+model Abonnement {
+  id                     String               @id @default(uuid())
+  date_debut             DateTime?
+  date_fin               DateTime?
+  statut                 StatutAbonnement
+  type_abonnement        TypeAbonnement
+  type_abonnement_detail TypeAbonnementDetail
+  montant                Float?
+  stripe_customer_id     String?
+  stripe_subscription_id String?
+  date_creation          DateTime             @default(now())
+  date_modification      DateTime             @default(now())
+
+  id_utilisateur String
+  utilisateur    Utilisateur @relation(fields: [id_utilisateur], references: [id])
+
+  transactions TransactionPaiement[]
+
+  @@map("abonnement")
+  @@schema("tilt_schema")
+}
+
+model Badge {
+  id          String  @id @default(uuid())
+  nom         String
+  description String?
+  icone_url   String?
+
+  utilisateurs UtilisateursBadges[]
+
+  @@map("badge")
+  @@schema("tilt_schema")
+}
+
+model UtilisateursBadges {
+  id_utilisateur String
+  id_badge       String
+  date_obtention DateTime @default(now())
+
+  utilisateur Utilisateur @relation(fields: [id_utilisateur], references: [id])
+  badge       Badge       @relation(fields: [id_badge], references: [id])
+
+  @@id([id_utilisateur, id_badge])
+  @@map("utilisateurs_badges")
+  @@schema("tilt_schema")
+}
+
+model Parrainage {
+  id            String   @id @default(uuid())
+  date          DateTime @default(now())
+  points_gagnes Float?
+
+  parrain_id String
+  filleul_id String
+
+  parrain Utilisateur @relation("Parrain", fields: [parrain_id], references: [id])
+  filleul Utilisateur @relation("Filleul", fields: [filleul_id], references: [id])
+
+  @@map("parrainage")
+  @@schema("tilt_schema")
+}
+
+model QrCode {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  date_generation DateTime @default(now())
+  actif           Boolean  @default(true)
+
+  id_utilisateur String
+  utilisateur    Utilisateur @relation(fields: [id_utilisateur], references: [id])
+
+  @@unique([id_utilisateur, actif])
+  @@map("qr_code")
+  @@schema("tilt_schema")
+}
+
+model TransactionPaiement {
+  id                       String         @id @default(uuid())
+  stripe_payment_intent_id String?
+  montant                  Float?
+  devise                   String?        @default("EUR")
+  statut                   StatutPaiement
+  date_paiement            DateTime       @default(now())
+
+  id_abonnement String
+  abonnement    Abonnement @relation(fields: [id_abonnement], references: [id])
+
+  @@map("transaction_paiement")
+  @@schema("tilt_schema")
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  titre      String
+  message    String
+  date_envoi DateTime @default(now())
+  lu         Boolean  @default(false)
+
+  id_utilisateur String
+  utilisateur    Utilisateur @relation(fields: [id_utilisateur], references: [id])
+
+  @@index([lu])
+  @@map("notification")
+  @@schema("tilt_schema")
+}
+
+model Avis {
+  id          String   @id @default(uuid())
+  note        Int
+  commentaire String?
+  date_avis   DateTime @default(now())
+
+  id_utilisateur String
+  utilisateur    Utilisateur @relation(fields: [id_utilisateur], references: [id])
+
+  id_magasin String
+  magasin    Magasin @relation(fields: [id_magasin], references: [id])
+
+  @@index([note])
+  @@map("avis")
+  @@schema("tilt_schema")
+}

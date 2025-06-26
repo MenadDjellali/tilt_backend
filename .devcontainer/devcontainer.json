@@ -1,0 +1,17 @@
+{
+  "dockerComposeFile": "./docker-compose.yml",
+  "service": "tilt_backend",
+  "workspaceFolder": "/workspaces/tilt",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "visualstudioexptteam.vscodeintellicode",
+        "tombonnike.vscode-status-bar-format-toggle",
+        "michelemelluso.code-beautifier",
+        "postman.postman-for-vscode",
+        "prisma.prisma",
+      ]
+    }
+  },
+  "remoteUser": "1000"
+}

@@ -1,0 +1,548 @@
+openapi: 3.0.3
+info:
+  title: tilt API
+  description: API de fidélité pour commerçants et clients.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+paths:
+  /auth/register:
+    post:
+      summary: Inscription utilisateur (client ou commerçant)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                prenom:
+                  type: string
+                email:
+                  type: string
+                numero_telephone:
+                  type: string
+                password:
+                  type: string
+                adresse:
+                  type: string
+                codePostale:
+                  type: string
+                type:
+                  type: string
+                  enum: [client, commercant]
+                magasin:
+                  type: object
+                  description: Informations du magasin (obligatoire pour un commerçant)
+                  properties:
+                    nom:
+                      type: string
+                    numeros_de_siret:
+                      type: string
+                    numero_telephone:
+                      type: string
+                    email:
+                      type: string
+                    site_web:
+                      type: string
+                    description:
+                      type: string
+                    adresse:
+                      type: string
+                    code_postal:
+                      type: string
+                    ville:
+                      type: string
+                    photo_url:
+                      type: string
+                    horaires_ouverture:
+                      type: string
+                    id_categorie:
+                      type: string
+                      format: uuid
+              required:
+                - nom
+                - prenom
+                - email
+                - numero_telephone
+                - password
+                - adresse
+                - codePostale
+                - type
+      responses:
+        "201":
+          description: Inscription réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  access_token:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      nom:
+                        type: string
+                      prenom:
+                        type: string
+                      email:
+                        type: string
+                      numero_telephone:
+                        type: string
+                      adresse:
+                        type: string
+                      code_postal:
+                        type: string
+                      type:
+                        type: string
+                      magasin:
+                        type: object
+                        nullable: true
+                        properties:
+                          id:
+                            type: string
+                          nom:
+                            type: string
+                          numeros_de_siret:
+                            type: string
+                          numero_telephone:
+                            type: string
+                          email:
+                            type: string
+                          site_web:
+                            type: string
+                          description:
+                            type: string
+                          adresse:
+                            type: string
+                          code_postal:
+                            type: string
+                          ville:
+                            type: string
+                          photo_url:
+                            type: string
+                          horaires_ouverture:
+                            type: string
+                          id_categorie:
+                            type: string
+        "400":
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Les informations du magasin sont requises pour un commerçant"
+        "409":
+          description: Conflit (doublons)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email déjà utilisé"
+
+  /auth/login:
+    post:
+      summary: Connexion utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required: [email, password]
+      responses:
+        "200":
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  refreshToken:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      nom:
+                        type: string
+                      prenom:
+                        type: string
+                      email:
+                        type: string
+                      numero_telephone:
+                        type: string
+                      adresse:
+                        type: string
+                      code_postal:
+                        type: string
+                      type:
+                        type: string
+        "401":
+          description: Identifiants invalides
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Identifiants invalides"
+
+  /auth/logout:
+    post:
+      summary: Déconnexion
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Déconnecté
+        "401":
+          description: Non autorisé
+
+  /auth/refresh-token:
+    post:
+      summary: Rafraîchir le token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+              required: [refreshToken]
+      responses:
+        "200":
+          description: Jeton mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+        "403":
+          description: Jeton invalide
+
+  /auth/verify-code:
+    post:
+      summary: Vérification du code d’email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                code:
+                  type: string
+              required: [userId, code]
+      responses:
+        "200":
+          description: Code vérifié
+        "400":
+          description: Code invalide
+
+  /auth/forgot-password:
+    post:
+      summary: Réinitialisation mot de passe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+              required: [email]
+      responses:
+        "200":
+          description: Email envoyé
+        "404":
+          description: Email non trouvé
+
+  /commercant/profile:
+    get:
+      summary: Obtenir les informations du commerçant connecté
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Informations du commerçant
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  nom:
+                    type: string
+                  email:
+                    type: string
+                  codePostale:
+                    type: string
+        "401":
+          description: Non autorisé
+
+    put:
+      summary: Mettre à jour le profil commerçant
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom:
+                  type: string
+                codePostale:
+                  type: string
+      responses:
+        "200":
+          description: Profil mis à jour
+        "401":
+          description: Non autorisé
+
+  /commercant/regle-fidelite:
+    post:
+      summary: Définir ou mettre à jour les règles de fidélité
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pointsParEuro:
+                  type: number
+                reductionParPalier:
+                  type: number
+                palier:
+                  type: integer
+              required: [pointsParEuro, reductionParPalier, palier]
+      responses:
+        "200":
+          description: Règles enregistrées
+        "401":
+          description: Non autorisé
+
+    get:
+      summary: Obtenir les règles de fidélité du commerçant connecté
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Règles de fidélité récupérées
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pointsParEuro:
+                    type: number
+                  reductionParPalier:
+                    type: number
+                  palier:
+                    type: integer
+        "401":
+          description: Non autorisé
+
+  /commercant/attribuer-points:
+    post:
+      summary: Ajouter des points à un client
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientId:
+                  type: string
+                montant:
+                  type: number
+              required: [clientId, montant]
+      responses:
+        "200":
+          description: Points attribués
+        "400":
+          description: Données invalides
+        "401":
+          description: Non autorisé
+
+  /client/points:
+    get:
+      summary: Consulter ses points de fidélité
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Points récupérés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalPoints:
+                    type: number
+        "401":
+          description: Non autorisé
+
+  /client/recompenses:
+    get:
+      summary: Voir les récompenses disponibles
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Liste des récompenses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    description:
+                      type: string
+                    pointsRequis:
+                      type: number
+        "401":
+          description: Non autorisé
+
+  /client/reclamer-recompense:
+    post:
+      summary: Réclamer une récompense
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recompenseId:
+                  type: string
+              required: [recompenseId]
+      responses:
+        "200":
+          description: Récompense réclamée
+        "400":
+          description: Points insuffisants
+        "401":
+          description: Non autorisé
+
+  /commercant/scan-qr:
+    post:
+      summary: Scanner un QR code client
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                qrCode:
+                  type: string
+              required: [qrCode]
+      responses:
+        "200":
+          description: QR analysé avec succès
+        "400":
+          description: QR code invalide
+        "401":
+          description: Non autorisé
+
+  /commercant/code-pin:
+    post:
+      summary: Vérification du code PIN commerçant
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pin:
+                  type: string
+              required: [pin]
+      responses:
+        "200":
+          description: Code PIN correct
+        "401":
+          description: Code PIN incorrect ou non autorisé
+
+  /stripe/create-session:
+    post:
+      summary: Créer une session de paiement Stripe
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                planId:
+                  type: string
+              required: [planId]
+      responses:
+        "200":
+          description: Session Stripe créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+        "401":
+          description: Non autorisé
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

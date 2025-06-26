@@ -1,0 +1,48 @@
+version: "3.9"
+
+volumes:
+  db-data:
+
+services:
+
+  tilt_backend:
+    image: node:22
+    container_name: tilt_backend
+    depends_on:
+      - tilt_db
+    env_file: ./.env
+    command: /bin/sh -c "while true; do sleep 1000; done"
+    ports:
+      - 3000:3000
+    volumes:
+      - "..:/workspaces/tilt"
+    working_dir: /workspaces/tilt
+
+  tilt_db:
+    build:
+      context: ./builders/pg/ctx/
+      dockerfile: ../Dockerfile
+    command: postgres -c config_file=/var/lib/postgresql/postgresql.conf
+    container_name: tilt_db
+    environment:
+      DB_SCHEMA: tilt_schema
+      tilt_USER: dev
+      tilt_PASSWORD: dev
+      POSTGRES_DB: tilt
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+      POSTGRES_PASSWORD: dev
+      POSTGRES_USER: postgres
+    restart: unless-stopped
+    user: postgres
+    volumes:
+      - type: volume
+        source: db-data
+        target: /var/lib/postgresql/data
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    depends_on:
+      - tilt_db
+    ports:
+      - 8080:8080

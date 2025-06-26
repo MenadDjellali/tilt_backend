@@ -1,0 +1,5 @@
+[server]
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=critical,CA:FALSE
+extendedKeyUsage=serverAuth
+keyUsage=critical,digitalSignature,keyEncipherment
